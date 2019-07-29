@@ -230,19 +230,18 @@ public class Sign {
      * Recovers the address that created the given signature from the given transaction.
      *
      * @param signatureData The signature.
-     * @param rawTx            The signed transaction.
-     * @return the address that produced the siganture data from the transaction.
+     * @param rawTx         The corresponding transaction without any signatures attached.
+     * @return the address that produced the signature data from the transaction.
      * @throws SignatureException throws if the signature is invalid.
      */
     public static String recoverSigningAddress(byte[] rawTx, SignatureData signatureData)
             throws SignatureException {
 
-        byte[] encodedTransaction = rawTx;
         byte v = signatureData.getV();
         byte[] r = signatureData.getR();
         byte[] s = signatureData.getS();
         SignatureData signatureDataV = new Sign.SignatureData(getRealV(v), r, s);
-        BigInteger key = Sign.signedMessageToKey(encodedTransaction, signatureDataV);
+        BigInteger key = Sign.signedMessageToKey(rawTx, signatureDataV);
         return Keys.getAddress(key);
     }
 

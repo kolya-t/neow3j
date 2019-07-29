@@ -4,6 +4,7 @@ import io.neow3j.crypto.Hash;
 import io.neow3j.io.BinaryReader;
 import io.neow3j.io.BinaryWriter;
 import io.neow3j.io.NeoSerializable;
+import io.neow3j.io.NeoSerializableInterface;
 import io.neow3j.model.types.TransactionType;
 import io.neow3j.utils.ArrayUtils;
 import io.neow3j.utils.Numeric;
@@ -156,6 +157,32 @@ public abstract class RawTransaction extends NeoSerializable {
     @Override
     public byte[] toArray() {
         return super.toArray();
+    }
+
+    /**
+     * <p>Instantiates the corresponding transaction from the given raw transaction byte array.</p>
+     * <br>
+     * <p>The transaction type is derived from the first byte.</p>
+     *
+     * @param rawTransaction The raw transaction byte array.
+     * @return the deserialized transaction.
+     */
+    public static RawTransaction fromArray(byte[] rawTransaction)
+            throws IllegalAccessException, InstantiationException {
+
+        TransactionType transactionType = TransactionType.valueOf(rawTransaction[0]);
+
+        switch(transactionType) {
+            case CONTRACT_TRANSACTION:
+                return NeoSerializableInterface.from(rawTransaction, ContractTransaction.class);
+            case INVOCATION_TRANSACTION:
+                return NeoSerializableInterface.from(rawTransaction, InvocationTransaction.class);
+            case CLAIM_TRANSACTION:
+                return NeoSerializableInterface.from(rawTransaction, ClaimTransaction.class);
+            default:
+                throw new UnsupportedOperationException("The detected transaction type is not " +
+                        "yet supported.");
+        }
     }
 
     protected static abstract class Builder<T extends Builder<T>> {

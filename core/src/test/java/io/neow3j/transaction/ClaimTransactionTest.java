@@ -1,12 +1,11 @@
 package io.neow3j.transaction;
 
 import io.neow3j.crypto.ECKeyPair;
-import io.neow3j.utils.Keys;
 import io.neow3j.crypto.WIF;
-import io.neow3j.io.NeoSerializableInterface;
 import io.neow3j.model.types.GASAsset;
 import io.neow3j.protocol.core.methods.response.NeoGetClaimable.Claim;
 import io.neow3j.protocol.core.methods.response.NeoGetClaimable.Claimables;
+import io.neow3j.utils.Keys;
 import io.neow3j.utils.Numeric;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -54,7 +53,7 @@ public class ClaimTransactionTest {
         int index = 0;
         String rawTransaction = "020001ff8c509a090d440c0e3471709ef536f8e8d32caa2488ed8c64c6f7acf1d1a44b0000000001e72d286979ee6cb1b7e65dfddfb2e384100b8d148e7758de42e4168b71792c600060d020a900000023ba2703c53263e8d6e522dc32203339dcd8eee90141400c40efd5f4a37b09fb8dca3e9cd6486c1b2d46c0319ac216c348f546ff44bb5fc3a328a43f2f49c9b2aa4cb1ce3f40327fd8403966e117745eb5c1266614f7d42321031a6c6fbbdf02ca351745fa86b9ba5a9452d785ac4f7fc2b7548ca2a46c4fcf4aac";
         byte[] rawTransactionArray = Numeric.hexStringToByteArray(rawTransaction);
-        ClaimTransaction claimTransaction = NeoSerializableInterface.from(rawTransactionArray, ClaimTransaction.class);
+        ClaimTransaction claimTransaction = (ClaimTransaction)RawTransaction.fromArray(rawTransactionArray);
         assertNotNull(claimTransaction);
         assertEquals(
                 new RawTransactionInput(txId, index),
