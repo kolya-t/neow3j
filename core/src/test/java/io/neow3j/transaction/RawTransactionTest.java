@@ -1,8 +1,6 @@
 package io.neow3j.transaction;
 
 import io.neow3j.crypto.Hash;
-import io.neow3j.crypto.transaction.RawScript;
-import io.neow3j.crypto.transaction.RawTransaction;
 import io.neow3j.utils.Numeric;
 import org.junit.Test;
 

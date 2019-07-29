@@ -1,7 +1,6 @@
 package io.neow3j.crypto;
 
 import io.neow3j.constants.NeoConstants;
-import io.neow3j.crypto.transaction.RawTransaction;
 import io.neow3j.utils.ArrayUtils;
 import io.neow3j.utils.Keys;
 import io.neow3j.utils.Numeric;
@@ -231,14 +230,14 @@ public class Sign {
      * Recovers the address that created the given signature from the given transaction.
      *
      * @param signatureData The signature.
-     * @param tx            The signed transaction.
+     * @param rawTx            The signed transaction.
      * @return the address that produced the siganture data from the transaction.
      * @throws SignatureException throws if the signature is invalid.
      */
-    public static String recoverSigningAddress(RawTransaction tx, SignatureData signatureData)
+    public static String recoverSigningAddress(byte[] rawTx, SignatureData signatureData)
             throws SignatureException {
 
-        byte[] encodedTransaction = tx.toArrayWithoutScripts();
+        byte[] encodedTransaction = rawTx;
         byte v = signatureData.getV();
         byte[] r = signatureData.getR();
         byte[] s = signatureData.getS();

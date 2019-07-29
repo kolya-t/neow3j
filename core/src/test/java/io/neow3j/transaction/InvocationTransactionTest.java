@@ -1,11 +1,5 @@
 package io.neow3j.transaction;
 
-import io.neow3j.crypto.ECKeyPair;
-import io.neow3j.crypto.transaction.RawScript;
-import io.neow3j.crypto.transaction.RawTransaction;
-import io.neow3j.crypto.transaction.RawTransactionAttribute;
-import io.neow3j.crypto.transaction.RawTransactionInput;
-import io.neow3j.crypto.transaction.RawTransactionOutput;
 import io.neow3j.model.types.GASAsset;
 import io.neow3j.utils.Keys;
 import io.neow3j.utils.Numeric;
