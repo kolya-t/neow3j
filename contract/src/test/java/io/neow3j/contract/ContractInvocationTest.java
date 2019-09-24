@@ -7,13 +7,19 @@ import io.neow3j.model.types.GASAsset;
 import io.neow3j.model.types.NEOAsset;
 import io.neow3j.model.types.TransactionAttributeUsageType;
 import io.neow3j.protocol.Neow3j;
+import io.neow3j.protocol.core.methods.response.NeoApplicationLog.Execution;
+import io.neow3j.protocol.exceptions.ErrorResponseException;
+import io.neow3j.protocol.http.HttpService;
 import io.neow3j.transaction.InvocationTransaction;
 import io.neow3j.utils.Numeric;
 import io.neow3j.wallet.Account;
+import io.neow3j.wallet.AssetTransfer;
 import io.neow3j.wallet.InputCalculationStrategy;
 import io.neow3j.wallet.Utxo;
 import org.junit.Test;
+import rx.Subscription;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Arrays;
 
@@ -249,4 +255,70 @@ public class ContractInvocationTest {
                 .build();
     }
 
+    @Test
+    public void test() throws IOException, ErrorResponseException, InterruptedException {
+        Neow3j neow = Neow3j.build(new HttpService("https://node1.neocompiler.io"));
+        Account acct = Account.fromWIF("KxDgvEKzgSBPPfuVfw67oPQBSjidEiqTHURKSDL1R7yGaGYAeYnr").build();
+        acct.updateAssetBalances(neow);
+        AssetTransfer at = new AssetTransfer.Builder(neow)
+                .account(acct)
+                .amount(1)
+                .asset(NEOAsset.HASH_ID)
+                .toAddress("APLJBPhtRg2XLhtpxEHd6aRNL7YSLGH2ZL")
+                .build()
+                .sign()
+                .send();
+
+        String txId = at.getTransaction().getTxId();
+        System.out.println("The txId is " + txId);
+
+        Thread.sleep(30000);
+
+        System.out.println("Now subscribing.");
+        Subscription sub = at.subscribe(block -> {
+            System.out.println("The transaction has been included in block " + block.getIndex());
+            System.out.println(block.toString());
+        });
+        System.out.println("Subscribed, now sleeping.");
+
+        Thread.sleep(5000);
+    }
+
+    @Test
+    public void test2() throws IOException, ErrorResponseException, InterruptedException {
+        Neow3j neow = Neow3j.build(new HttpService("https://node1.neocompiler.io"));
+        Account acct = Account.fromWIF("KxDgvEKzgSBPPfuVfw67oPQBSjidEiqTHURKSDL1R7yGaGYAeYnr").build();
+        acct.updateAssetBalances(neow);
+        ContractInvocation ci = new ContractInvocation.Builder(neow)
+                .account(acct)
+                .contractScriptHash(new ScriptHash("eb423d31c3110c488d0b3be470719edbed1ec3ac"))
+                .parameter(ContractParameter.integer(1))
+                .build()
+                .sign()
+                .invoke();
+
+        ci.subscribe(tx -> {
+            System.out.println("Transaction persisted.");
+            System.out.println(tx.toString());
+            try {
+                Execution execution = neow.getApplicationLog(ci.getTransaction().getTxId())
+                        .send().getApplicationLog().getExecutions().get(0);
+                System.out.println("Execution result: " + execution.getStack().get(0).getValue());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            setTransactionPersisted();
+        });
+
+        while (!transactionPersisted) {
+            System.out.println("Sleeping 3 secs.");
+            Thread.sleep(3000);
+        }
+    }
+
+    private boolean transactionPersisted = false;
+
+    private void setTransactionPersisted() {
+        transactionPersisted = true;
+    }
 }

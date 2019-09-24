@@ -8,16 +8,22 @@ import io.neow3j.crypto.transaction.RawTransactionOutput;
 import io.neow3j.model.types.GASAsset;
 import io.neow3j.model.types.TransactionAttributeUsageType;
 import io.neow3j.protocol.Neow3j;
+import io.neow3j.protocol.core.BlockParameterIndex;
+import io.neow3j.protocol.core.methods.response.NeoBlock;
 import io.neow3j.protocol.core.methods.response.NeoGetContractState;
 import io.neow3j.protocol.core.methods.response.NeoSendRawTransaction;
+import io.neow3j.protocol.core.methods.response.Transaction;
 import io.neow3j.protocol.exceptions.ErrorResponseException;
 import io.neow3j.transaction.ContractTransaction;
 import io.neow3j.utils.Numeric;
 import io.neow3j.utils.Strings;
 import io.neow3j.wallet.Balances.AssetBalance;
+import rx.Subscription;
+import rx.functions.Action1;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -31,6 +37,7 @@ public class AssetTransfer {
     private Neow3j neow3j;
     private ContractTransaction tx;
     private Account account;
+    private BigInteger blockNrAtSend;
 
     private AssetTransfer(Builder builder) {
         this.neow3j = builder.neow3j;
@@ -41,6 +48,24 @@ public class AssetTransfer {
     public ContractTransaction getTransaction() {
         return tx;
     }
+
+    public Subscription subscribe(Action1<NeoBlock> onNext) {
+        if (blockNrAtSend == null) {
+            throw new IllegalStateException("Can't subscribe before transaction has been sent.");
+        }
+        return this.neow3j
+                .catchUpToLatestAndSubscribeToNewBlocksObservable(new BlockParameterIndex(blockNrAtSend), true)
+//                .catchUpToLatestAndSubscribeToNewBlocksObservable(BlockParameterName.LATEST, true)
+                .subscribe(block -> {
+                    for (Transaction tx : block.getBlock().getTransactions()) {
+                        if (Numeric.cleanHexPrefix(tx.getTransactionId()).equals(this.tx.getTxId())) {
+                            onNext.call(block.getBlock());
+                        }
+                    }
+                });
+    }
+
+
 
     /**
      * <p>Adds the given witness to the transaction's witnesses.</p>
@@ -62,6 +87,7 @@ public class AssetTransfer {
         String rawTx = Numeric.toHexStringNoPrefix(tx.toArray());
         NeoSendRawTransaction response = neow3j.sendRawTransaction(rawTx).send();
         response.throwOnError();
+        blockNrAtSend = this.neow3j.getBlockCount().send().getBlockIndex();
         return this;
     }
 

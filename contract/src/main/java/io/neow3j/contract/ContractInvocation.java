@@ -8,9 +8,11 @@ import io.neow3j.crypto.transaction.RawTransactionOutput;
 import io.neow3j.model.types.GASAsset;
 import io.neow3j.model.types.TransactionAttributeUsageType;
 import io.neow3j.protocol.Neow3j;
+import io.neow3j.protocol.core.BlockParameterIndex;
 import io.neow3j.protocol.core.Response;
 import io.neow3j.protocol.core.methods.response.InvocationResult;
 import io.neow3j.protocol.core.methods.response.NeoSendRawTransaction;
+import io.neow3j.protocol.core.methods.response.Transaction;
 import io.neow3j.protocol.exceptions.ErrorResponseException;
 import io.neow3j.transaction.InvocationTransaction;
 import io.neow3j.utils.ArrayUtils;
@@ -21,15 +23,18 @@ import io.neow3j.wallet.Utxo;
 import io.neow3j.wallet.Wallet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import rx.Subscription;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class ContractInvocation {
@@ -42,6 +47,7 @@ public class ContractInvocation {
     private List<ContractParameter> params;
     private Account account;
     private InvocationTransaction tx;
+    private BigInteger blockNrAtSend;
 
     private ContractInvocation() {
     }
@@ -81,6 +87,7 @@ public class ContractInvocation {
         String rawTx = Numeric.toHexStringNoPrefix(tx.toArray());
         NeoSendRawTransaction response = neow3j.sendRawTransaction(rawTx).send();
         response.throwOnError();
+        blockNrAtSend = neow3j.getBlockCount().send().getBlockIndex();
         return this;
     }
 
@@ -192,6 +199,22 @@ public class ContractInvocation {
 //        // The GAS amount is returned in decimal form (not Fixed8) so we can directly convert to BigDecimal.
 //        return new BigDecimal(result.getGasConsumed());
 //    }
+
+    public Subscription subscribe(Consumer<Transaction> consumer) {
+        if (blockNrAtSend == null) {
+            throw new IllegalStateException("Can't subscribe before transaction has been sent.");
+        }
+        return this.neow3j
+                .catchUpToLatestAndSubscribeToNewBlocksObservable(new BlockParameterIndex(blockNrAtSend), true)
+                .subscribe(block -> {
+                    for (Transaction tx : block.getBlock().getTransactions()) {
+                        if (Numeric.cleanHexPrefix(tx.getTransactionId()).equals(this.tx.getTxId())) {
+                            consumer.accept(tx);
+                        }
+                    }
+                });
+    }
+
 
     public static class Builder {
 
