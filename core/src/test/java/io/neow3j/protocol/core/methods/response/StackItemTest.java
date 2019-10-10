@@ -313,32 +313,4 @@ public class StackItemTest extends ResponseTester {
         assertEquals(other.hashCode(), item.hashCode());
     }
 
-    @Test
-    public void test() throws IOException {
-        Neow3j neow3j = Neow3j.build(new HttpService("https://node2.neocompiler.io"));
-
-        NeoApplicationLog applicationLog = neow3j
-                .getApplicationLog("c141087aee1ef13ba5c4a953e57d544e20a0ea3b4c175a4a0ef408a744e7ef67")
-                .send()
-                .getApplicationLog();
-
-        Execution exec =  applicationLog.getExecutions().get(0);
-        StackItem result = exec.getStack().get(0);
-        if (result instanceof ByteArrayStackItem) {
-            System.out.println("Execution result: " + result.asByteArray().getAsString());
-        } else if (result instanceof IntegerStackItem || result instanceof BooleanStackItem) {
-            System.out.println("Execution result: " + result.getValue());
-        }
-
-        System.out.println("Notifications:");
-        for (Notification notification : exec.getNotifications()) {
-            StackItem item = notification.getState();
-            if (item instanceof ByteArrayStackItem) {
-                System.out.println("\t" + item.asByteArray().getAsString());
-            } else if (item instanceof IntegerStackItem || item instanceof BooleanStackItem) {
-                System.out.println("\t" + item.getValue());
-            }
-        }
-    }
-
 }
