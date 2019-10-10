@@ -23,7 +23,7 @@ import io.neow3j.wallet.Utxo;
 import io.neow3j.wallet.Wallet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import rx.Subscription;
+import rx.Observable;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -34,7 +34,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class ContractInvocation {
@@ -200,21 +199,26 @@ public class ContractInvocation {
 //        return new BigDecimal(result.getGasConsumed());
 //    }
 
-    public Subscription subscribe(Consumer<Transaction> consumer) {
+    public Observable<Transaction> getTransactionObservable() {
         if (blockNrAtSend == null) {
             throw new IllegalStateException("Can't subscribe before transaction has been sent.");
         }
+        String txId = this.tx.getTxId();
         return this.neow3j
-                .catchUpToLatestAndSubscribeToNewBlocksObservable(new BlockParameterIndex(blockNrAtSend), true)
-                .subscribe(block -> {
-                    for (Transaction tx : block.getBlock().getTransactions()) {
-                        if (Numeric.cleanHexPrefix(tx.getTransactionId()).equals(this.tx.getTxId())) {
-                            consumer.accept(tx);
-                        }
-                    }
-                });
-    }
+                .catchUpToLatestAndSubscribeToNewBlocksObservable(
+                        new BlockParameterIndex(blockNrAtSend), true)
+                .filter(neoGetBlock -> neoGetBlock.getBlock().getTransactions().stream()
+                        .anyMatch(tx -> Numeric.cleanHexPrefix(tx.getTransactionId()).equals(txId)))
+                .map(neoGetBlock -> neoGetBlock.getBlock().getTransactions().stream()
+                        .filter(tx -> Numeric.cleanHexPrefix(tx.getTransactionId()).equals(
+                                txId)).findAny().get());
 
+        // TODO 10.10.19 claude:
+        // If the transaction has been found on a block once, we could safe it to this
+        // ContractInvocation object. If this method gets called again, we'll return another
+        // observable that immediately return the transaction object without catching up
+        // to the newest block.
+    }
 
     public static class Builder {
 

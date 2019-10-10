@@ -7,13 +7,11 @@ import io.neow3j.model.types.GASAsset;
 import io.neow3j.model.types.NEOAsset;
 import io.neow3j.model.types.TransactionAttributeUsageType;
 import io.neow3j.protocol.Neow3j;
-import io.neow3j.protocol.core.methods.response.NeoApplicationLog.Execution;
 import io.neow3j.protocol.exceptions.ErrorResponseException;
 import io.neow3j.protocol.http.HttpService;
 import io.neow3j.transaction.InvocationTransaction;
 import io.neow3j.utils.Numeric;
 import io.neow3j.wallet.Account;
-import io.neow3j.wallet.AssetTransfer;
 import io.neow3j.wallet.InputCalculationStrategy;
 import io.neow3j.wallet.Utxo;
 import org.junit.Test;
@@ -255,70 +253,29 @@ public class ContractInvocationTest {
                 .build();
     }
 
-    @Test
-    public void test() throws IOException, ErrorResponseException, InterruptedException {
-        Neow3j neow = Neow3j.build(new HttpService("https://node1.neocompiler.io"));
-        Account acct = Account.fromWIF("KxDgvEKzgSBPPfuVfw67oPQBSjidEiqTHURKSDL1R7yGaGYAeYnr").build();
-        acct.updateAssetBalances(neow);
-        AssetTransfer at = new AssetTransfer.Builder(neow)
-                .account(acct)
-                .amount(1)
-                .asset(NEOAsset.HASH_ID)
-                .toAddress("APLJBPhtRg2XLhtpxEHd6aRNL7YSLGH2ZL")
-                .build()
-                .sign()
-                .send();
+//    @Test
+    public void subscribe_to_transaction() throws IOException, ErrorResponseException,
+            InterruptedException {
 
-        String txId = at.getTransaction().getTxId();
-        System.out.println("The txId is " + txId);
-
-        Thread.sleep(30000);
-
-        System.out.println("Now subscribing.");
-        Subscription sub = at.subscribe(block -> {
-            System.out.println("The transaction has been included in block " + block.getIndex());
-            System.out.println(block.toString());
-        });
-        System.out.println("Subscribed, now sleeping.");
-
-        Thread.sleep(5000);
-    }
-
-    @Test
-    public void test2() throws IOException, ErrorResponseException, InterruptedException {
-        Neow3j neow = Neow3j.build(new HttpService("https://node1.neocompiler.io"));
+        Neow3j neow = Neow3j.build(new HttpService("http://localhost:30333"));
         Account acct = Account.fromWIF("KxDgvEKzgSBPPfuVfw67oPQBSjidEiqTHURKSDL1R7yGaGYAeYnr").build();
         acct.updateAssetBalances(neow);
         ContractInvocation ci = new ContractInvocation.Builder(neow)
                 .account(acct)
-                .contractScriptHash(new ScriptHash("eb423d31c3110c488d0b3be470719edbed1ec3ac"))
-                .parameter(ContractParameter.integer(1))
+                .contractScriptHash(new ScriptHash("746d6cc63dacd7b275bb3a3a06d54859661591a6"))
+                .parameter(ContractParameter.string("symbol"))
+                .parameter(ContractParameter.array())
                 .build()
                 .sign()
                 .invoke();
 
-        ci.subscribe(tx -> {
-            System.out.println("Transaction persisted.");
-            System.out.println(tx.toString());
-            try {
-                Execution execution = neow.getApplicationLog(ci.getTransaction().getTxId())
-                        .send().getApplicationLog().getExecutions().get(0);
-                System.out.println("Execution result: " + execution.getStack().get(0).getValue());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            setTransactionPersisted();
-        });
+                Subscription sub = ci.getTransactionObservable().subscribe(t -> {
+                    System.out.println("Transaction found in block " + t.getBlockHash());
+                    System.out.println(t.toString());
+                });
 
-        while (!transactionPersisted) {
-            System.out.println("Sleeping 3 secs.");
-            Thread.sleep(3000);
-        }
+                Thread.sleep(20000);
+                sub.unsubscribe();
     }
 
-    private boolean transactionPersisted = false;
-
-    private void setTransactionPersisted() {
-        transactionPersisted = true;
-    }
 }
