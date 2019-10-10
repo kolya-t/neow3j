@@ -7,6 +7,11 @@ import io.neow3j.model.types.GASAsset;
 import io.neow3j.model.types.NEOAsset;
 import io.neow3j.model.types.TransactionAttributeUsageType;
 import io.neow3j.protocol.Neow3j;
+import io.neow3j.protocol.core.Request;
+import io.neow3j.protocol.core.methods.response.NeoApplicationLog;
+import io.neow3j.protocol.core.methods.response.NeoBlockCount;
+import io.neow3j.protocol.core.methods.response.NeoGetApplicationLog;
+import io.neow3j.protocol.core.methods.response.NeoSendRawTransaction;
 import io.neow3j.protocol.exceptions.ErrorResponseException;
 import io.neow3j.protocol.http.HttpService;
 import io.neow3j.transaction.InvocationTransaction;
@@ -15,16 +20,23 @@ import io.neow3j.wallet.Account;
 import io.neow3j.wallet.InputCalculationStrategy;
 import io.neow3j.wallet.Utxo;
 import org.junit.Test;
+import rx.Observable;
 import rx.Subscription;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 
 public class ContractInvocationTest {
 
@@ -278,4 +290,66 @@ public class ContractInvocationTest {
                 sub.unsubscribe();
     }
 
+    @Test
+    public void subscribe_to_application_log() throws IOException, ErrorResponseException {
+
+        Request rawTransactionRequestMock = mock(Request.class);
+        when(rawTransactionRequestMock.send()).thenReturn(new NeoSendRawTransaction());
+
+        Request blockCountRequestMock = mock(Request.class);
+        NeoBlockCount blockCountResponse = new NeoBlockCount();
+        blockCountResponse.setResult(BigInteger.ONE);
+        when(blockCountRequestMock.send()).thenReturn(blockCountResponse);
+
+        Request applicationLogRequestMock = mock(Request.class);
+        NeoGetApplicationLog applicationLogResponse = new NeoGetApplicationLog();
+        applicationLogResponse.setResult(new NeoApplicationLog());
+        when(applicationLogRequestMock.send()).thenReturn(applicationLogResponse);
+
+        Neow3j neowMock = mock(Neow3j.class);
+        when(neowMock.sendRawTransaction(any())).thenReturn(rawTransactionRequestMock);
+        when(neowMock.getBlockCount()).thenReturn(blockCountRequestMock);
+        when(neowMock.getApplicationLog(any())).thenReturn(applicationLogRequestMock);
+
+        Observable<NeoApplicationLog> o = new ContractInvocation.Builder(neowMock)
+                .account(ACCT)
+                .contractScriptHash(NUMBER_INCREMENT_SC_SCRIPT_HASH)
+                .parameter(REGISTER)
+                .build()
+                .sign()
+                .invoke()
+                .getApplicationLogObservable();
+
+        AtomicReference<NeoApplicationLog> logRef = new AtomicReference<>();
+        o.subscribe(log -> {
+            logRef.set(log);
+            System.out.println("Found the application log: " + log.toString());
+        });
+        assertNotNull(logRef.get());
+    }
+
+    // TODO 10.10.19 claude:
+    // Remove
+    public void test() throws IOException, ErrorResponseException {
+        Neow3j neow = Neow3j.build(new HttpService("http://localhost:30333"));
+
+        Observable<NeoApplicationLog> o = new ContractInvocation.Builder(neow)
+                .account(ACCT)
+                .contractScriptHash(new ScriptHash("746d6cc63dacd7b275bb3a3a06d54859661591a6"))
+                .parameter(ContractParameter.string("totalSupply"))
+                .parameter(ContractParameter.array())
+                .build()
+                .sign()
+                .invoke()
+                .getApplicationLogObservable();
+
+        AtomicReference<NeoApplicationLog> logRef = new AtomicReference<>();
+        System.out.println("Subscribing!");
+        o.subscribe(log -> {
+            logRef.set(log);
+            System.out.println("Found the application log: " + log.toString());
+        });
+        System.out.println("Subscribed!");
+        assertNotNull(logRef.get());
+    }
 }

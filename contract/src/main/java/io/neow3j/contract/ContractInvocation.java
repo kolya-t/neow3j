@@ -11,6 +11,7 @@ import io.neow3j.protocol.Neow3j;
 import io.neow3j.protocol.core.BlockParameterIndex;
 import io.neow3j.protocol.core.Response;
 import io.neow3j.protocol.core.methods.response.InvocationResult;
+import io.neow3j.protocol.core.methods.response.NeoApplicationLog;
 import io.neow3j.protocol.core.methods.response.NeoSendRawTransaction;
 import io.neow3j.protocol.core.methods.response.Transaction;
 import io.neow3j.protocol.exceptions.ErrorResponseException;
@@ -218,6 +219,45 @@ public class ContractInvocation {
         // ContractInvocation object. If this method gets called again, we'll return another
         // observable that immediately return the transaction object without catching up
         // to the newest block.
+    }
+
+    public Observable<NeoApplicationLog> getApplicationLogObservable() {
+        if (blockNrAtSend == null) {
+            throw new IllegalStateException("Can't subscribe before transaction has been sent.");
+        }
+
+        String txId = this.tx.getTxId();
+
+        return Observable.create(subscriber -> {
+            NeoApplicationLog log = null;
+            while (log == null) {
+                try {
+                    log = neow3j.getApplicationLog(txId).send().getApplicationLog();
+                    if (log == null) {
+                        System.out.println("Sleeping!");
+                        Thread.sleep(5000);
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    subscriber.onError(e);
+                }
+            }
+            subscriber.onNext(log);
+            subscriber.onCompleted();
+        });
+//        return this.neow3j
+//                .catchUpToLatestAndSubscribeToNewBlocksObservable(
+//                        new BlockParameterIndex(blockNrAtSend), true)
+//                .filter(neoGetBlock -> neoGetBlock.getBlock().getTransactions().stream()
+//                        .anyMatch(tx -> Numeric.cleanHexPrefix(tx.getTransactionId()).equals(txId)))
+//                .map(neoGetBlock -> {
+//                    try {
+//                        return neow3j.getApplicationLog(txId).send().getApplicationLog();
+//                    } catch (IOException e) {
+//                        return null;
+//                    }
+//                });
     }
 
     public static class Builder {
