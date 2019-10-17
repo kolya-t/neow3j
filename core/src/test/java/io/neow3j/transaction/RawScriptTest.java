@@ -1,9 +1,8 @@
-package io.neow3j.crypto.transaction;
+package io.neow3j.transaction;
 
 import io.neow3j.contract.ScriptHash;
 import io.neow3j.crypto.ECKeyPair;
 import io.neow3j.crypto.Hash;
-import io.neow3j.crypto.SampleKeys;
 import io.neow3j.crypto.Sign;
 import io.neow3j.crypto.Sign.SignatureData;
 import io.neow3j.io.NeoSerializableInterface;
@@ -20,9 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static io.neow3j.constants.OpCode.CHECKSIG;
-import static io.neow3j.constants.OpCode.PUSHBYTES33;
-import static io.neow3j.constants.OpCode.PUSHBYTES64;
+import static io.neow3j.constants.OpCode.*;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 

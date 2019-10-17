@@ -1,7 +1,8 @@
-package io.neow3j.crypto.transaction;
+package io.neow3j.transaction;
 
 import io.neow3j.crypto.ECKeyPair;
 import io.neow3j.io.NeoSerializableInterface;
+import io.neow3j.transaction.RawVerificationScript;
 import io.neow3j.utils.ArrayUtils;
 import io.neow3j.utils.Keys;
 import io.neow3j.utils.Numeric;

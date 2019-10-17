@@ -1,9 +1,8 @@
-package io.neow3j.crypto.transaction;
+package io.neow3j.transaction;
 
 import io.neow3j.model.types.NEOAsset;
+import io.neow3j.transaction.RawTransactionOutput;
 import org.junit.Test;
-
-import java.math.BigDecimal;
 
 import static org.junit.Assert.*;
 

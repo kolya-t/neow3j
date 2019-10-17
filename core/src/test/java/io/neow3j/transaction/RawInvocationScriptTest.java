@@ -1,9 +1,10 @@
-package io.neow3j.crypto.transaction;
+package io.neow3j.transaction;
 
 import io.neow3j.crypto.ECKeyPair;
 import io.neow3j.crypto.Sign;
 import io.neow3j.crypto.Sign.SignatureData;
 import io.neow3j.io.NeoSerializableInterface;
+import io.neow3j.transaction.RawInvocationScript;
 import io.neow3j.utils.ArrayUtils;
 import org.junit.Test;
 
