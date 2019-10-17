@@ -43,6 +43,7 @@ allprojects {
 
     apply plugin: 'java'
     apply plugin: 'jacoco'
+    apply plugin: 'maven'
     //apply plugin: 'checkstyle'
 
     group 'io.neow3j'
