@@ -14,7 +14,7 @@ import java.util.Arrays;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-public class ContractDeploymentScriptTest {
+public class ContractDeploymentWitnessTest {
 
     private byte[] contract;
 

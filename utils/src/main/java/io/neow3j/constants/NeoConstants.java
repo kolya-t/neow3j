@@ -9,6 +9,8 @@ import java.math.BigInteger;
 
 public class NeoConstants {
 
+    public static final byte CURRENT_TX_VERSION = 0;
+
     public static final X9ECParameters CURVE_PARAMS = CustomNamedCurves.getByName("secp256r1");
     public static final ECDomainParameters CURVE = new ECDomainParameters(
             CURVE_PARAMS.getCurve(), CURVE_PARAMS.getG(), CURVE_PARAMS.getN(), CURVE_PARAMS.getH());

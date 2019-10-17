@@ -1,8 +1,8 @@
 package io.neow3j.contract;
 
 import io.neow3j.contract.ContractInvocation.Builder;
-import io.neow3j.transaction.RawTransactionAttribute;
-import io.neow3j.transaction.RawTransactionOutput;
+import io.neow3j.transaction.TransactionAttribute;
+import io.neow3j.transaction.TransactionOutput;
 import io.neow3j.model.types.GASAsset;
 import io.neow3j.model.types.NEOAsset;
 import io.neow3j.model.types.TransactionAttributeUsageType;
@@ -85,7 +85,7 @@ public class ContractInvocationTest {
                 .networkFee("1")
                 .parameter(REGISTER)
                 .parameter(ARGUMENTS)
-                .attribute(new RawTransactionAttribute(TransactionAttributeUsageType.SCRIPT, spyAcct.getScriptHash().toArray()))
+                .attribute(new TransactionAttribute(TransactionAttributeUsageType.SCRIPT, spyAcct.getScriptHash().toArray()))
                 .build()
                 .sign()
                 .getTransaction();
@@ -164,8 +164,9 @@ public class ContractInvocationTest {
                 .account(spyAcct)
                 .parameter(REGISTER)
                 .parameter(ARGUMENTS)
-                .attribute(new RawTransactionAttribute(TransactionAttributeUsageType.SCRIPT, spyAcct.getScriptHash().toArray()))
-                .output(RawTransactionOutput.createNeoTransactionOutput(neoOut.toPlainString(), toAddress))
+                .attribute(new TransactionAttribute(TransactionAttributeUsageType.SCRIPT, spyAcct.getScriptHash().toArray()))
+                .output(TransactionOutput
+                        .createNeoTransactionOutput(neoOut.toPlainString(), toAddress))
                 .build()
                 .sign()
                 .getTransaction();
@@ -224,7 +225,7 @@ public class ContractInvocationTest {
                 .parameter(ARGUMENTS)
                 .build();
 
-        RawTransactionAttribute attr = i.getTransaction().getAttributes().get(0);
+        TransactionAttribute attr = i.getTransaction().getAttributes().get(0);
         assertEquals(TransactionAttributeUsageType.SCRIPT, attr.getUsage());
         assertArrayEquals(ACCT.getScriptHash().toArray(), attr.getDataAsBytes());
 

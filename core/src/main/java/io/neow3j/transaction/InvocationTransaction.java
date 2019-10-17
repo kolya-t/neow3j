@@ -1,66 +1,53 @@
 package io.neow3j.transaction;
 
-import io.neow3j.io.BinaryReader;
-import io.neow3j.io.BinaryWriter;
-import io.neow3j.model.types.TransactionType;
-import io.neow3j.utils.Numeric;
-
-import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.List;
 
-public class InvocationTransaction extends RawTransaction {
+public class InvocationTransaction {
 
-    private byte[] contractScript;
-    private BigDecimal systemFee;
-
-    public InvocationTransaction() { }
-
-    protected InvocationTransaction(Builder builder) {
-        super(builder);
-        this.contractScript = builder.contractScript;
-        this.systemFee = builder.systemFee;
+    public byte[] toArray() {
+        return new byte[0];
     }
 
-    @Override
-    public void serializeExclusive(BinaryWriter writer) throws IOException {
-        writer.writeVarBytes(contractScript);
-        writer.write(Numeric.fromDecimalToFixed8ByteArray(this.systemFee));
+    public byte[] toArrayWithoutScripts() {
+        return new byte[0];
     }
 
-    @Override
-    public void deserializeExclusive(BinaryReader reader) throws IOException {
-        this.contractScript = reader.readVarBytes();
-        this.systemFee = Numeric.fromFixed8ToDecimal(reader.readBytes(8));
+    public void addScript(Witness witness) {
+
     }
 
-    public byte[] getContractScript() {
-        return this.contractScript;
+    public List<TransactionAttribute> getAttributes() {
+        return null;
     }
 
-    public static class Builder extends RawTransaction.Builder<Builder> {
+    public static class Builder {
+        public Builder outputs(List<TransactionOutput> outputs) {
+            return this;
+        }
 
-        private byte[] contractScript;
-        private BigDecimal systemFee;
+        public Builder inputs(List<TransactionInput> inputs) {
+            return this;
+        }
 
-        public Builder() {
-            super();
-            transactionType(TransactionType.INVOCATION_TRANSACTION);
-            systemFee = BigDecimal.ZERO;
-            contractScript = new byte[]{};
+        public Builder scripts(List<Witness> witnesses) {
+            return this;
+        }
+
+        public Builder attributes(List<TransactionAttribute> attributes) {
+            return this;
+        }
+
+        public InvocationTransaction build() {
+            return null;
+        }
+
+        public Builder systemFee(BigDecimal systemFee) {
+            return this;
         }
 
         public Builder contractScript(byte[] script) {
-            this.contractScript = script; return this;
-        }
-
-        public Builder systemFee(BigDecimal gas) {
-            this.systemFee = gas; return this;
-        }
-
-        @Override
-        public InvocationTransaction build() {
-            return new InvocationTransaction(this);
+            return this;
         }
     }
 }
-

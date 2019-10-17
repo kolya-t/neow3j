@@ -1,37 +1,40 @@
 package io.neow3j.transaction;
 
-import io.neow3j.io.BinaryReader;
-import io.neow3j.io.BinaryWriter;
-import io.neow3j.model.types.TransactionType;
+import java.util.List;
 
-public class ContractTransaction extends RawTransaction {
+public class ContractTransaction {
 
-    public ContractTransaction() { }
-
-    protected ContractTransaction(Builder builder) {
-        super(builder);
+    public byte[] toArray() {
+        return new byte[0];
     }
 
-    @Override
-    public void serializeExclusive(BinaryWriter writer) {
-        // no type-specific serialization.
+    public byte[] toArrayWithoutScripts() {
+        return new byte[0];
     }
 
-    @Override
-    public void deserializeExclusive(BinaryReader reader) {
-        // no type-specific deserialization.
+    public void addScript(Witness witness) {
+
     }
 
-    public static class Builder extends RawTransaction.Builder<Builder> {
-
-        public Builder() {
-            super();
-            transactionType(TransactionType.CONTRACT_TRANSACTION);
+    public static class Builder {
+        public Builder outputs(List<TransactionOutput> outputs) {
+            return this;
         }
 
-        @Override
+        public Builder inputs(List<TransactionInput> inputs) {
+            return this;
+        }
+
+        public Builder scripts(List<Witness> witnesses) {
+            return this;
+        }
+
+        public Builder attributes(List<TransactionAttribute> attributes) {
+            return this;
+        }
+
         public ContractTransaction build() {
-            return new ContractTransaction(this);
+            return null;
         }
     }
 }

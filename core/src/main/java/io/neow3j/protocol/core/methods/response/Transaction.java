@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
-import io.neow3j.model.types.TransactionType;
+import io.neow3j.transaction.Cosigner;
 
 import java.util.List;
 import java.util.Objects;
@@ -13,51 +13,46 @@ import java.util.Objects;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Transaction {
 
-    @JsonProperty("txid")
+    @JsonProperty("hash")
     private String transactionId;
 
     @JsonProperty("size")
-    private long size;
-
-    @JsonProperty("type")
-    private TransactionType type;
+    private Long size;
 
     @JsonProperty("version")
-    private int version;
+    private Integer version;
 
-    @JsonProperty("attributes")
-    @JsonSetter(nulls = Nulls.AS_EMPTY)
-    private List<TransactionAttribute> attributes;
+    @JsonProperty("nonce")
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Integer nonce;
 
-    @JsonProperty("vin")
-    @JsonSetter(nulls = Nulls.AS_EMPTY)
-    private List<TransactionInput> inputs;
-
-    @JsonProperty("vout")
-    @JsonSetter(nulls = Nulls.AS_EMPTY)
-    private List<TransactionOutput> outputs;
+    @JsonProperty("sender")
+    private String sender;
 
     @JsonProperty("sys_fee")
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private String sysFee;
 
     @JsonProperty("net_fee")
     private String netFee;
 
-    @JsonProperty("scripts")
+    @JsonProperty("valid_until_block")
+    private Integer validUntilBlock;
+
+    @JsonProperty("attributes")
     @JsonSetter(nulls = Nulls.AS_EMPTY)
-    private List<Script> scripts;
+    private List<TransactionAttribute> attributes;
+
+    @JsonProperty("cosigners")
+    private List<Cosigner> cosigners;
 
     @JsonProperty("script")
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private String script;
 
-    @JsonProperty("gas")
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    private String gas;
-
-    @JsonProperty("nonce")
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    private Long nonce;
+    @JsonProperty("witnesses")
+    @JsonSetter(nulls = Nulls.AS_EMPTY)
+    private List<Script> scripts;
 
     @JsonProperty("blockhash")
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -74,36 +69,23 @@ public class Transaction {
     public Transaction() {
     }
 
-    public Transaction(String transactionId, long size, TransactionType type, int version, List<TransactionAttribute> attributes, List<TransactionInput> inputs, List<TransactionOutput> outputs, String sysFee, String netFee, List<Script> scripts, String script, String gas, Long nonce) {
+    public Transaction(String transactionId, Long size, Integer version, Integer nonce,
+            String sender, String sysFee, String netFee, Integer validUntilBlock,
+            List<TransactionAttribute> attributes,
+            List<Cosigner> cosigners, String script,
+            List<Script> scripts, String blockHash, Long confirmations, Long blockTime) {
         this.transactionId = transactionId;
         this.size = size;
-        this.type = type;
         this.version = version;
-        this.attributes = attributes;
-        this.inputs = inputs;
-        this.outputs = outputs;
+        this.nonce = nonce;
+        this.sender = sender;
         this.sysFee = sysFee;
         this.netFee = netFee;
-        this.scripts = scripts;
-        this.script = script;
-        this.gas = gas;
-        this.nonce = nonce;
-    }
-
-    public Transaction(String transactionId, long size, TransactionType type, int version, List<TransactionAttribute> attributes, List<TransactionInput> inputs, List<TransactionOutput> outputs, String sysFee, String netFee, List<Script> scripts, String script, String gas, Long nonce, String blockHash, Long confirmations, Long blockTime) {
-        this.transactionId = transactionId;
-        this.size = size;
-        this.type = type;
-        this.version = version;
+        this.validUntilBlock = validUntilBlock;
         this.attributes = attributes;
-        this.inputs = inputs;
-        this.outputs = outputs;
-        this.sysFee = sysFee;
-        this.netFee = netFee;
-        this.scripts = scripts;
+        this.cosigners = cosigners;
         this.script = script;
-        this.gas = gas;
-        this.nonce = nonce;
+        this.scripts = scripts;
         this.blockHash = blockHash;
         this.confirmations = confirmations;
         this.blockTime = blockTime;
@@ -113,28 +95,20 @@ public class Transaction {
         return transactionId;
     }
 
-    public long getSize() {
+    public Long getSize() {
         return size;
     }
 
-    public TransactionType getType() {
-        return type;
-    }
-
-    public int getVersion() {
+    public Integer getVersion() {
         return version;
     }
 
-    public List<TransactionAttribute> getAttributes() {
-        return attributes;
+    public Integer getNonce() {
+        return nonce;
     }
 
-    public List<TransactionInput> getInputs() {
-        return inputs;
-    }
-
-    public List<TransactionOutput> getOutputs() {
-        return outputs;
+    public String getSender() {
+        return sender;
     }
 
     public String getSysFee() {
@@ -145,20 +119,24 @@ public class Transaction {
         return netFee;
     }
 
-    public List<Script> getScripts() {
-        return scripts;
+    public Integer getValidUntilBlock() {
+        return validUntilBlock;
+    }
+
+    public List<TransactionAttribute> getAttributes() {
+        return attributes;
+    }
+
+    public List<Cosigner> getCosigners() {
+        return cosigners;
     }
 
     public String getScript() {
         return script;
     }
 
-    public String getGas() {
-        return gas;
-    }
-
-    public Long getNonce() {
-        return nonce;
+    public List<Script> getScripts() {
+        return scripts;
     }
 
     public String getBlockHash() {
@@ -175,30 +153,33 @@ public class Transaction {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Transaction)) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         Transaction that = (Transaction) o;
-        return getSize() == that.getSize() &&
-                getVersion() == that.getVersion() &&
-                Objects.equals(getTransactionId(), that.getTransactionId()) &&
-                getType() == that.getType() &&
-                Objects.equals(getAttributes(), that.getAttributes()) &&
-                Objects.equals(getInputs(), that.getInputs()) &&
-                Objects.equals(getOutputs(), that.getOutputs()) &&
-                Objects.equals(getSysFee(), that.getSysFee()) &&
-                Objects.equals(getNetFee(), that.getNetFee()) &&
-                Objects.equals(getScripts(), that.getScripts()) &&
-                Objects.equals(getScript(), that.getScript()) &&
-                Objects.equals(getGas(), that.getGas()) &&
-                Objects.equals(getNonce(), that.getNonce()) &&
-                Objects.equals(getBlockHash(), that.getBlockHash()) &&
-                Objects.equals(getConfirmations(), that.getConfirmations()) &&
-                Objects.equals(getBlockTime(), that.getBlockTime());
+        return Objects.equals(transactionId, that.transactionId) &&
+                Objects.equals(size, that.size) &&
+                Objects.equals(version, that.version) &&
+                Objects.equals(nonce, that.nonce) &&
+                Objects.equals(sender, that.sender) &&
+                Objects.equals(sysFee, that.sysFee) &&
+                Objects.equals(netFee, that.netFee) &&
+                Objects.equals(validUntilBlock, that.validUntilBlock) &&
+                Objects.equals(attributes, that.attributes) &&
+                Objects.equals(cosigners, that.cosigners) &&
+                Objects.equals(script, that.script) &&
+                Objects.equals(scripts, that.scripts) &&
+                Objects.equals(blockHash, that.blockHash) &&
+                Objects.equals(confirmations, that.confirmations) &&
+                Objects.equals(blockTime, that.blockTime);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getTransactionId(), getSize(), getType(), getVersion(), getAttributes(), getInputs(), getOutputs(), getSysFee(), getNetFee(), getScripts(), getScript(), getGas(), getNonce(), getBlockHash(), getConfirmations(), getBlockTime());
+        return Objects.hash(transactionId, size, version, nonce, sender, sysFee, netFee,
+                validUntilBlock, attributes, cosigners, script, scripts, blockHash, confirmations,
+                blockTime);
     }
 
     @Override
@@ -206,17 +187,16 @@ public class Transaction {
         return "Transaction{" +
                 "transactionId='" + transactionId + '\'' +
                 ", size=" + size +
-                ", type=" + type +
                 ", version=" + version +
-                ", attributes=" + attributes +
-                ", inputs=" + inputs +
-                ", outputs=" + outputs +
-                ", sysFee='" + sysFee + '\'' +
-                ", netFee='" + netFee + '\'' +
-                ", scripts=" + scripts +
-                ", script='" + script + '\'' +
-                ", gas='" + gas + '\'' +
                 ", nonce=" + nonce +
+                ", sender='" + sender + '\'' +
+                ", systemFee='" + sysFee + '\'' +
+                ", networkFee='" + netFee + '\'' +
+                ", validUntilBlock=" + validUntilBlock +
+                ", attributes=" + attributes +
+                ", cosigners=" + cosigners +
+                ", script='" + script + '\'' +
+                ", scripts=" + scripts +
                 ", blockHash='" + blockHash + '\'' +
                 ", confirmations=" + confirmations +
                 ", blockTime=" + blockTime +

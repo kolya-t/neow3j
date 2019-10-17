@@ -23,7 +23,7 @@ import static io.neow3j.constants.OpCode.*;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-public class RawScriptTest {
+public class WitnessTest {
 
     @Test
     public void testCreateWitness() throws InvalidAlgorithmParameterException,
@@ -32,7 +32,7 @@ public class RawScriptTest {
         byte[] message = new byte[10];
         Arrays.fill(message, (byte) 10);
         ECKeyPair keyPair = ECKeyPair.createEcKeyPair();
-        RawScript witness = RawScript.createWitness(message, keyPair);
+        Witness witness = Witness.createWitness(message, keyPair);
 
         SignatureData expectedSignature = Sign.signMessage(message, keyPair);
         byte[] expectedInvScript = ArrayUtils.concatenate(PUSHBYTES64.getValue(), expectedSignature.getConcatenated());
@@ -50,11 +50,11 @@ public class RawScriptTest {
         byte[] message = new byte[10];
         Arrays.fill(message, (byte) 10);
         ECKeyPair keyPair = ECKeyPair.createEcKeyPair();
-        RawScript witness = RawScript.createWitness(message, keyPair);
+        Witness witness = Witness.createWitness(message, keyPair);
 
-        byte[] invScript = RawInvocationScript.fromMessageAndKeyPair(message, keyPair).getScript();
+        byte[] invScript = InvocationScript.fromMessageAndKeyPair(message, keyPair).getScript();
         byte[] invScriptLen = BigInteger.valueOf(invScript.length).toByteArray();
-        byte[] veriScript = RawVerificationScript.fromPublicKey(keyPair.getPublicKey()).getScript();
+        byte[] veriScript = VerificationScript.fromPublicKey(keyPair.getPublicKey()).getScript();
         byte[] veriScriptLen = BigInteger.valueOf(veriScript.length).toByteArray();
 
         byte[] expectedWitness = ArrayUtils.concatenate(invScriptLen, invScript, veriScriptLen, veriScript);
@@ -114,23 +114,23 @@ public class RawScriptTest {
 
 
         // Test create from BigIntegers
-        RawScript script = RawScript.createMultiSigWitness(signingThreshold, signatures, publicKeys);
-        assertArrayEquals(expectedScript, script.toArray());
+        Witness witness = Witness.createMultiSigWitness(signingThreshold, signatures, publicKeys);
+        assertArrayEquals(expectedScript, witness.toArray());
 
         // Test create from byte arrays.
         byte[][] keys = publicKeys.stream().map(BigInteger::toByteArray).toArray(byte[][]::new);
-        script = RawScript.createMultiSigWitness(signingThreshold, signatures, keys);
-        assertArrayEquals(expectedScript, script.toArray());
+        witness = Witness.createMultiSigWitness(signingThreshold, signatures, keys);
+        assertArrayEquals(expectedScript, witness.toArray());
     }
 
     @Test
     public void testSerializeWithRandomScripts() {
         byte[] message = new byte[10];
         Arrays.fill(message, (byte) 10);
-        RawScript script = new RawScript(message, message);
+        Witness witness = new Witness(message, message);
         byte[] halfOfScript = ArrayUtils.concatenate((byte) message.length, message);
         byte[] expectedScript = ArrayUtils.concatenate(halfOfScript, halfOfScript);
-        assertArrayEquals(expectedScript, script.toArray());
+        assertArrayEquals(expectedScript, witness.toArray());
     }
 
 
@@ -152,18 +152,18 @@ public class RawScriptTest {
         buf.put(keyPair.getPublicKey().toByteArray());
         buf.put(CHECKSIG.getValue());
 
-        RawScript script = NeoSerializableInterface.from(buf.array(), RawScript.class);
+        Witness witness = NeoSerializableInterface.from(buf.array(), Witness.class);
 
         buf = ByteBuffer.allocate(1 + 64);
         buf.put(PUSHBYTES64.getValue());
         buf.put(Sign.signMessage(message, keyPair).getConcatenated());
-        assertArrayEquals(buf.array(), script.getInvocationScript().getScript());
+        assertArrayEquals(buf.array(), witness.getInvocationScript().getScript());
 
         buf = ByteBuffer.allocate(1 + 33 + 1);
         buf.put(PUSHBYTES33.getValue());
         buf.put(keyPair.getPublicKey().toByteArray());
         buf.put(CHECKSIG.getValue());
-        assertArrayEquals(buf.array(), script.getVerificationScript().getScript());
+        assertArrayEquals(buf.array(), witness.getVerificationScript().getScript());
     }
 
     @Test
@@ -172,22 +172,22 @@ public class RawScriptTest {
         int messageSize = 10;
         byte[] message = new byte[messageSize];
         Arrays.fill(message, (byte) 1);
-        RawScript script = RawScript.createWitness(message, keyPair);
+        Witness witness = Witness.createWitness(message, keyPair);
 
         byte[] expectedVerificationScript = Numeric.hexStringToByteArray(
                 // PUSHBYTES33 + Public key + CHECKSIG
                 "21" + SampleKeys.PUBLIC_KEY_STRING_1 + "ac"
         );
         byte[] expectedHash = Hash.sha256AndThenRipemd160(expectedVerificationScript);
-        assertArrayEquals(expectedHash, script.getScriptHash().toArray());
+        assertArrayEquals(expectedHash, witness.getScriptHash().toArray());
 
         // Test with script hash generated by neon-js
         byte[] invocationScript = Numeric.hexStringToByteArray("4051c2e6e2993c6feb43383131ed2091f4953747d3e16ecad752cdd90203a992dea0273e98c8cd09e9bfcf2dab22ce843429cdf0fcb9ba4ac93ef1aeef40b20783");
         byte[] verificationScript = Numeric.hexStringToByteArray("21031d8e1630ce640966967bc6d95223d21f44304133003140c3b52004dc981349c9ac");
-        script = new RawScript(invocationScript, verificationScript);
+        witness = new Witness(invocationScript, verificationScript);
         assertArrayEquals(
                 Numeric.hexStringToByteArray("35b20010db73bf86371075ddfba4e6596f1ff35d"),
-                script.getScriptHash().toArray()
+                witness.getScriptHash().toArray()
         );
     }
 
@@ -195,7 +195,7 @@ public class RawScriptTest {
     public void createWithoutVerificationScript() {
         byte[] invocationScript = Numeric.hexStringToByteArray("0000");
         ScriptHash sh = new ScriptHash("1a70eac53f5882e40dd90f55463cce31a9f72cd4");
-        RawScript s = new RawScript(invocationScript, sh);
+        Witness s = new Witness(invocationScript, sh);
         // 02: two bytes of invocation script;
         // 0000: invocation script;
         // 00: zero bytes of verification script

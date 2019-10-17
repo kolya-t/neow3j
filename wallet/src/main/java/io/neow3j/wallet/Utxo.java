@@ -1,6 +1,6 @@
 package io.neow3j.wallet;
 
-import io.neow3j.transaction.RawTransactionInput;
+import io.neow3j.transaction.TransactionInput;
 
 import java.math.BigDecimal;
 
@@ -48,7 +48,7 @@ public class Utxo {
         return value;
     }
 
-    public RawTransactionInput toTransactionInput() {
-        return new RawTransactionInput(txId, index);
+    public TransactionInput toTransactionInput() {
+        return new TransactionInput(txId, index);
     }
 }

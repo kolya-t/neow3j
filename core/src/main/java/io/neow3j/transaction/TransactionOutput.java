@@ -12,7 +12,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Objects;
 
-public class RawTransactionOutput extends NeoSerializable {
+public class TransactionOutput extends NeoSerializable {
 
     private String assetId;
 
@@ -20,7 +20,7 @@ public class RawTransactionOutput extends NeoSerializable {
 
     private String address;
 
-    public RawTransactionOutput() {
+    public TransactionOutput() {
     }
 
     /**
@@ -30,7 +30,7 @@ public class RawTransactionOutput extends NeoSerializable {
      * @param amount  The asset amount.
      * @param address The receiving address.
      */
-    public RawTransactionOutput(String assetId, String amount, String address) {
+    public TransactionOutput(String assetId, String amount, String address) {
         this.assetId = assetId;
         this.value = new BigDecimal(amount);
         this.address = address;
@@ -43,7 +43,7 @@ public class RawTransactionOutput extends NeoSerializable {
      * @param amount  The asset amount.
      * @param address The receiving address.
      */
-    public RawTransactionOutput(String assetId, double amount, String address) {
+    public TransactionOutput(String assetId, double amount, String address) {
         this(assetId, Double.toString(amount), address);
     }
 
@@ -59,15 +59,15 @@ public class RawTransactionOutput extends NeoSerializable {
         return address;
     }
 
-    public static RawTransactionOutput createNeoTransactionOutput(String value, String address) {
-        return new RawTransactionOutput(NEOAsset.HASH_ID, value, address);
+    public static TransactionOutput createNeoTransactionOutput(String value, String address) {
+        return new TransactionOutput(NEOAsset.HASH_ID, value, address);
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof RawTransactionOutput)) return false;
-        RawTransactionOutput that = (RawTransactionOutput) o;
+        if (!(o instanceof TransactionOutput)) return false;
+        TransactionOutput that = (TransactionOutput) o;
         return Objects.equals(getAssetId(), that.getAssetId()) &&
                 this.value.compareTo(that.value) == 0 &&
                 Objects.equals(getAddress(), that.getAddress());

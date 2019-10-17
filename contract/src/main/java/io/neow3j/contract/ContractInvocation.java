@@ -1,10 +1,7 @@
 package io.neow3j.contract;
 
 import io.neow3j.crypto.SecureRandomUtils;
-import io.neow3j.transaction.RawScript;
-import io.neow3j.transaction.RawTransactionAttribute;
-import io.neow3j.transaction.RawTransactionInput;
-import io.neow3j.transaction.RawTransactionOutput;
+import io.neow3j.transaction.*;
 import io.neow3j.model.types.GASAsset;
 import io.neow3j.model.types.TransactionAttributeUsageType;
 import io.neow3j.protocol.Neow3j;
@@ -12,7 +9,6 @@ import io.neow3j.protocol.core.Response;
 import io.neow3j.protocol.core.methods.response.InvocationResult;
 import io.neow3j.protocol.core.methods.response.NeoSendRawTransaction;
 import io.neow3j.protocol.exceptions.ErrorResponseException;
-import io.neow3j.transaction.InvocationTransaction;
 import io.neow3j.utils.ArrayUtils;
 import io.neow3j.utils.Numeric;
 import io.neow3j.wallet.Account;
@@ -70,7 +66,7 @@ public class ContractInvocation {
      * <br>
      * <p>Before calling this method you should make sure that the transaction is signed either by
      * calling {@link ContractInvocation#sign()}} to automatically sign or by adding a custom
-     * witness with {@link ContractInvocation#addWitness(RawScript)}.</p>
+     * witness with {@link ContractInvocation#addWitness(Witness)}.</p>
      *
      * @return this contract invocation object.
      * @throws IOException            if a connection problem with the RPC node arises.
@@ -127,7 +123,7 @@ public class ContractInvocation {
                     "signing the transaction. Decrypt the private key before attempting to sign " +
                     "with it.");
         }
-        tx.addScript(RawScript.createWitness(tx.toArrayWithoutScripts(), account.getECKeyPair()));
+        tx.addScript(Witness.createWitness(tx.toArrayWithoutScripts(), account.getECKeyPair()));
         return this;
     }
 
@@ -135,7 +131,7 @@ public class ContractInvocation {
      * <p>Adds the given witness to the invocation transaction's witnesses.</p>
      * <br>
      * <p>Use this method for adding a custom witness to the invocation transaction.
-     * This does the same as the method {@link Builder#witness(RawScript)}, namely just add the
+     * This does the same as the method {@link Builder#witness(Witness)}, namely just add the
      * provided witness. But here it allows to add a witness from the created invocation
      * transaction object ({@link ContractInvocation#getTransaction()}) which is not possible in the
      * builder.</p>
@@ -143,7 +139,7 @@ public class ContractInvocation {
      * @param witness The witness to be added.
      * @return this invocation object.
      */
-    public ContractInvocation addWitness(RawScript witness) {
+    public ContractInvocation addWitness(Witness witness) {
         tx.addScript(witness);
         return this;
     }
@@ -198,15 +194,15 @@ public class ContractInvocation {
         private Neow3j neow3j;
         private ScriptHash scriptHash;
         private String function;
-        private List<RawScript> witnesses;
+        private List<Witness> witnesses;
         private List<ContractParameter> params;
         private Account account;
         private BigDecimal networkFee;
         private BigDecimal systemFee;
         private InputCalculationStrategy inputCalculationStrategy;
-        private List<RawTransactionAttribute> attributes;
-        private List<RawTransactionInput> inputs;
-        private List<RawTransactionOutput> outputs;
+        private List<TransactionAttribute> attributes;
+        private List<TransactionInput> inputs;
+        private List<TransactionOutput> outputs;
         private InvocationTransaction tx;
 
         public Builder(Neow3j neow3j) {
@@ -315,7 +311,7 @@ public class ContractInvocation {
          * @param witness The witness to add.
          * @return this Builder object.
          */
-        public Builder witness(RawScript witness) {
+        public Builder witness(Witness witness) {
             this.witnesses.add(witness);
             return this;
         }
@@ -460,7 +456,7 @@ public class ContractInvocation {
          * @param attribute The attribute to add.
          * @return this Builder object.
          */
-        public Builder attribute(RawTransactionAttribute attribute) {
+        public Builder attribute(TransactionAttribute attribute) {
             this.attributes.add(attribute);
             return this;
         }
@@ -471,14 +467,14 @@ public class ContractInvocation {
          * @param attributes The attributes to add.
          * @return this Builder object.
          */
-        public Builder attributes(List<RawTransactionAttribute> attributes) {
+        public Builder attributes(List<TransactionAttribute> attributes) {
             this.attributes.addAll(attributes);
             return this;
         }
 
         // TODO 16.09.19 claude:
         // This needs to be implemented with UTXOs the same way as it is in AssetTransfer.
-        public Builder inputs(List<RawTransactionInput> inputs) {
+        public Builder inputs(List<TransactionInput> inputs) {
             throw new UnsupportedOperationException();
 //            this.inputs.addAll(inputs);
 //            return this;
@@ -486,7 +482,7 @@ public class ContractInvocation {
 
         // TODO 16.09.19 claude:
         // This needs to be implemented with UTXOs the same way as it is in AssetTransfer.
-        public Builder input(RawTransactionInput input) {
+        public Builder input(TransactionInput input) {
             throw new UnsupportedOperationException();
 //            this.inputs.add(input);
 //            return this;
@@ -500,7 +496,7 @@ public class ContractInvocation {
          * @param outputs The outputs to add.
          * @return this Builder object.
          */
-        public Builder outputs(List<RawTransactionOutput> outputs) {
+        public Builder outputs(List<TransactionOutput> outputs) {
             this.outputs.addAll(outputs);
             return this;
         }
@@ -512,7 +508,7 @@ public class ContractInvocation {
          * @param output The output to add.
          * @return this Builder object.
          */
-        public Builder output(RawTransactionOutput output) {
+        public Builder output(TransactionOutput output) {
             this.outputs.add(output);
             return this;
         }
@@ -533,7 +529,7 @@ public class ContractInvocation {
             if (neow3j == null) throw new IllegalStateException("Neow3j not set");
             if (scriptHash == null) throw new IllegalStateException("Contract script hash not set");
 
-            List<RawTransactionOutput> intents = new ArrayList<>(outputs);
+            List<TransactionOutput> intents = new ArrayList<>(outputs);
             intents.addAll(createOutputsFromFees(networkFee, systemFee));
             Map<String, BigDecimal> requiredAssets = calculateRequiredAssetsForIntents(intents);
 
@@ -573,13 +569,13 @@ public class ContractInvocation {
         private void addAttributesIfTransactionIsEmpty() {
             if (outputs.isEmpty() && inputs.isEmpty()) {
                 if (account != null) {
-                    RawTransactionAttribute scriptAttr = new RawTransactionAttribute(
+                    TransactionAttribute scriptAttr = new TransactionAttribute(
                             TransactionAttributeUsageType.SCRIPT,
                             account.getScriptHash().toArray());
                     this.attributes.add(scriptAttr);
                 }
 
-                RawTransactionAttribute remarkAttr = new RawTransactionAttribute(
+                TransactionAttribute remarkAttr = new TransactionAttribute(
                         TransactionAttributeUsageType.REMARK, createRandomRemark());
 
                 this.attributes.add(remarkAttr);
@@ -592,18 +588,18 @@ public class ContractInvocation {
                     SecureRandomUtils.generateRandomBytes(4));
         }
 
-        private List<RawTransactionOutput> createOutputsFromFees(BigDecimal... fees) {
-            List<RawTransactionOutput> outputs = new ArrayList<>(fees.length);
+        private List<TransactionOutput> createOutputsFromFees(BigDecimal... fees) {
+            List<TransactionOutput> outputs = new ArrayList<>(fees.length);
             for (BigDecimal fee : fees) {
                 if (fee.compareTo(BigDecimal.ZERO) > 0) {
-                    outputs.add(new RawTransactionOutput(GASAsset.HASH_ID, fee.toPlainString(), null));
+                    outputs.add(new TransactionOutput(GASAsset.HASH_ID, fee.toPlainString(), null));
                 }
             }
             return outputs;
         }
 
         private Map<String, BigDecimal> calculateRequiredAssetsForIntents(
-                List<RawTransactionOutput> outputs) {
+                List<TransactionOutput> outputs) {
 
             Map<String, BigDecimal> assets = new HashMap<>();
             outputs.forEach(output -> {
@@ -622,7 +618,7 @@ public class ContractInvocation {
                 inputs.addAll(utxos.stream().map(Utxo::toTransactionInput).collect(Collectors.toList()));
                 BigDecimal changeAmount = calculateChange(utxos, reqValue);
                 if (changeAmount != null) outputs.add(
-                        new RawTransactionOutput(reqAssetId, changeAmount.toPlainString(), account.getAddress()));
+                        new TransactionOutput(reqAssetId, changeAmount.toPlainString(), account.getAddress()));
             });
         }
 

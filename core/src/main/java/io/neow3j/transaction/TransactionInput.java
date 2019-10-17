@@ -10,16 +10,16 @@ import io.neow3j.utils.Numeric;
 import java.io.IOException;
 import java.util.Objects;
 
-public class RawTransactionInput extends NeoSerializable {
+public class TransactionInput extends NeoSerializable {
 
     public String prevHash;
 
     public int prevIndex;
 
-    public RawTransactionInput() {
+    public TransactionInput() {
     }
 
-    public RawTransactionInput(String prevHash, int prevIndex) {
+    public TransactionInput(String prevHash, int prevIndex) {
         this.prevHash = prevHash;
         this.prevIndex = prevIndex;
     }
@@ -35,8 +35,8 @@ public class RawTransactionInput extends NeoSerializable {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof RawTransactionInput)) return false;
-        RawTransactionInput that = (RawTransactionInput) o;
+        if (!(o instanceof TransactionInput)) return false;
+        TransactionInput that = (TransactionInput) o;
         return getPrevIndex() == that.getPrevIndex() &&
                 Objects.equals(getPrevHash(), that.getPrevHash());
     }

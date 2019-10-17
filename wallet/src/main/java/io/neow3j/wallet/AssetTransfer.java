@@ -1,17 +1,13 @@
 package io.neow3j.wallet;
 
 import io.neow3j.contract.ScriptHash;
-import io.neow3j.transaction.RawScript;
-import io.neow3j.transaction.RawTransactionAttribute;
-import io.neow3j.transaction.RawTransactionInput;
-import io.neow3j.transaction.RawTransactionOutput;
+import io.neow3j.transaction.*;
 import io.neow3j.model.types.GASAsset;
 import io.neow3j.model.types.TransactionAttributeUsageType;
 import io.neow3j.protocol.Neow3j;
 import io.neow3j.protocol.core.methods.response.NeoGetContractState;
 import io.neow3j.protocol.core.methods.response.NeoSendRawTransaction;
 import io.neow3j.protocol.exceptions.ErrorResponseException;
-import io.neow3j.transaction.ContractTransaction;
 import io.neow3j.utils.Numeric;
 import io.neow3j.utils.Strings;
 import io.neow3j.wallet.Balances.AssetBalance;
@@ -46,14 +42,14 @@ public class AssetTransfer {
      * <p>Adds the given witness to the transaction's witnesses.</p>
      * <br>
      * <p>Use this method for adding a custom witness to the transaction.
-     * This does the same as the method {@link Builder#witness(RawScript)}, namely just adds the
+     * This does the same as the method {@link Builder#witness(Witness)}, namely just adds the
      * provided witness. But here it allows to add a witness from the created transaction object
      * ({@link AssetTransfer#getTransaction()}) which is not possible in the builder.</p>
      *
      * @param witness The witness to be added.
      * @return this asset transfer object.
      */
-    public AssetTransfer addWitness(RawScript witness) {
+    public AssetTransfer addWitness(Witness witness) {
         tx.addScript(witness);
         return this;
     }
@@ -77,7 +73,7 @@ public class AssetTransfer {
                     "signing the transaction. Decrypt the private key before attempting to sign " +
                     "with it.");
         }
-        tx.addScript(RawScript.createWitness(tx.toArrayWithoutScripts(), account.getECKeyPair()));
+        tx.addScript(Witness.createWitness(tx.toArrayWithoutScripts(), account.getECKeyPair()));
         return this;
     }
 
@@ -86,11 +82,11 @@ public class AssetTransfer {
         private Neow3j neow3j;
         private Account account;
         private BigDecimal networkFee;
-        private List<RawTransactionOutput> outputs;
-        private List<RawTransactionInput> inputs;
+        private List<TransactionOutput> outputs;
+        private List<TransactionInput> inputs;
         private Map<String, List<Utxo>> utxos;
-        private List<RawScript> witnesses;
-        private List<RawTransactionAttribute> attributes;
+        private List<Witness> witnesses;
+        private List<TransactionAttribute> attributes;
         private InputCalculationStrategy inputCalculationStrategy;
         private ContractTransaction tx;
         private String assetId;
@@ -125,7 +121,7 @@ public class AssetTransfer {
          * @param output The transaction output to add.
          * @return this.
          */
-        public Builder output(RawTransactionOutput output) {
+        public Builder output(TransactionOutput output) {
             throwIfSingleOutputIsUsed();
             this.outputs.add(output);
             return this;
@@ -137,7 +133,7 @@ public class AssetTransfer {
          * @param outputs The transaction outputs to add.
          * @return this.
          */
-        public Builder outputs(List<RawTransactionOutput> outputs) {
+        public Builder outputs(List<TransactionOutput> outputs) {
             throwIfSingleOutputIsUsed();
             this.outputs.addAll(outputs);
             return this;
@@ -152,7 +148,7 @@ public class AssetTransfer {
          * @return this.
          */
         public Builder output(String assetId, String amount, String address) {
-            return output(new RawTransactionOutput(assetId, amount, address));
+            return output(new TransactionOutput(assetId, amount, address));
         }
 
         /**
@@ -164,7 +160,7 @@ public class AssetTransfer {
          * @return this.
          */
         public Builder output(String assetId, double amount, String address) {
-            return output(new RawTransactionOutput(assetId, amount, address));
+            return output(new TransactionOutput(assetId, amount, address));
         }
 
         /**
@@ -228,8 +224,8 @@ public class AssetTransfer {
             return utxos(new Utxo(assetId, transactionHash, index, value));
         }
 
-        public Builder witness(RawScript script) {
-            this.witnesses.add(script);
+        public Builder witness(Witness witness) {
+            this.witnesses.add(witness);
             return this;
         }
 
@@ -311,19 +307,19 @@ public class AssetTransfer {
         }
 
         public Builder attribute(TransactionAttributeUsageType type, byte[] value) {
-            return attribute(new RawTransactionAttribute(type, value));
+            return attribute(new TransactionAttribute(type, value));
         }
 
         public Builder attribute(TransactionAttributeUsageType type, String value) {
-            return attribute(new RawTransactionAttribute(type, value));
+            return attribute(new TransactionAttribute(type, value));
         }
 
-        public Builder attribute(RawTransactionAttribute attribute) {
+        public Builder attribute(TransactionAttribute attribute) {
             this.attributes.add(attribute);
             return this;
         }
 
-        public Builder attributes(List<RawTransactionAttribute> attributes) {
+        public Builder attributes(List<TransactionAttribute> attributes) {
             this.attributes.addAll(attributes);
             return this;
         }
@@ -385,13 +381,13 @@ public class AssetTransfer {
             if (account == null) throw new IllegalStateException("Account not set");
             if (outputs.isEmpty()) {
                 if (allSingleOutputAttributesSet()) {
-                    outputs.add(new RawTransactionOutput(assetId, amount.toPlainString(), toAddress));
+                    outputs.add(new TransactionOutput(assetId, amount.toPlainString(), toAddress));
                 } else {
                     throw new IllegalStateException("No or incomplete transaction outputs set");
                 }
             }
 
-            List<RawTransactionOutput> intents = new ArrayList<>();
+            List<TransactionOutput> intents = new ArrayList<>();
             intents.addAll(outputs);
             intents.addAll(createOutputsFromFees(networkFee));
             Map<String, BigDecimal> requiredAssets = calculateRequiredAssetsForIntents(intents);
@@ -437,7 +433,7 @@ public class AssetTransfer {
             // Because in a transaction that withdraws from a contract address the transaction
             // inputs are coming from the contract, there are now inputs from the account that
             // initiates the transfer. Therefore it needs to be mentioned in an script attribute.
-            attributes.add(new RawTransactionAttribute(
+            attributes.add(new TransactionAttribute(
                     TransactionAttributeUsageType.SCRIPT, account.getScriptHash().toArray()));
 
             NeoGetContractState contractState;
@@ -450,7 +446,7 @@ public class AssetTransfer {
             }
             int nrOfParams = contractState.getContractState().getContractParameters().size();
             byte[] invocationScript = Numeric.hexStringToByteArray(Strings.zeros(nrOfParams * 2));
-            witnesses.add(new RawScript(invocationScript, fromContractScriptHash));
+            witnesses.add(new Witness(invocationScript, fromContractScriptHash));
         }
 
         private void calculateInputsAndChange(Map<String, BigDecimal> requiredAssets,
@@ -469,7 +465,7 @@ public class AssetTransfer {
             });
         }
 
-        private RawTransactionOutput getChangeTransactionOutput(String assetId,
+        private TransactionOutput getChangeTransactionOutput(String assetId,
                                                                 BigDecimal requiredValue,
                                                                 List<Utxo> utxos,
                                                                 String changeAddress) {
@@ -479,7 +475,7 @@ public class AssetTransfer {
                 return null;
             }
             BigDecimal change = inputAmount.subtract(requiredValue);
-            return new RawTransactionOutput(assetId, change.toPlainString(), changeAddress);
+            return new TransactionOutput(assetId, change.toPlainString(), changeAddress);
         }
 
         private ContractTransaction buildTransaction() {
@@ -491,18 +487,18 @@ public class AssetTransfer {
                     .build();
         }
 
-        private List<RawTransactionOutput> createOutputsFromFees(BigDecimal... fees) {
-            List<RawTransactionOutput> outputs = new ArrayList<>(fees.length);
+        private List<TransactionOutput> createOutputsFromFees(BigDecimal... fees) {
+            List<TransactionOutput> outputs = new ArrayList<>(fees.length);
             for (BigDecimal fee : fees) {
                 if (fee.compareTo(BigDecimal.ZERO) > 0) {
-                    outputs.add(new RawTransactionOutput(GASAsset.HASH_ID, fee.toPlainString(), null));
+                    outputs.add(new TransactionOutput(GASAsset.HASH_ID, fee.toPlainString(), null));
                 }
             }
             return outputs;
         }
 
         private Map<String, BigDecimal> calculateRequiredAssetsForIntents(
-                List<RawTransactionOutput> outputs) {
+                List<TransactionOutput> outputs) {
 
             Map<String, BigDecimal> assets = new HashMap<>();
             outputs.forEach(output -> {

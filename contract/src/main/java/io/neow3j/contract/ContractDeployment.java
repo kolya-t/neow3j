@@ -3,9 +3,9 @@ package io.neow3j.contract;
 import io.neow3j.contract.abi.NeoABIUtils;
 import io.neow3j.contract.abi.exceptions.NEP3Exception;
 import io.neow3j.contract.abi.model.NeoContractInterface;
-import io.neow3j.transaction.RawScript;
-import io.neow3j.transaction.RawTransactionInput;
-import io.neow3j.transaction.RawTransactionOutput;
+import io.neow3j.transaction.Witness;
+import io.neow3j.transaction.TransactionInput;
+import io.neow3j.transaction.TransactionOutput;
 import io.neow3j.model.types.ContractParameterType;
 import io.neow3j.model.types.GASAsset;
 import io.neow3j.protocol.Neow3j;
@@ -68,7 +68,7 @@ public class ContractDeployment {
                     "signing the transaction. Decrypt the private key before attempting to sign " +
                     "with it.");
         }
-        tx.addScript(RawScript.createWitness(tx.toArrayWithoutScripts(), account.getECKeyPair()));
+        tx.addScript(Witness.createWitness(tx.toArrayWithoutScripts(), account.getECKeyPair()));
         return this;
     }
 
@@ -77,7 +77,7 @@ public class ContractDeployment {
      * <br>
      * <p>Before calling this method you should make sure that the transaction is signed either by
      * calling {@link ContractDeployment#sign()}} to automatically sign or by adding a custom
-     * witness with {@link ContractDeployment#addWitness(RawScript)}.</p>
+     * witness with {@link ContractDeployment#addWitness(Witness)}.</p>
      *
      * @return the contract that has been deployed.
      * @throws IOException            if a connection problem with the RPC node arises.
@@ -97,7 +97,7 @@ public class ContractDeployment {
      * @param witness The witness to be added.
      * @return this.
      */
-    public ContractDeployment addWitness(RawScript witness) {
+    public ContractDeployment addWitness(Witness witness) {
         tx.addScript(witness);
         return this;
     }
@@ -300,8 +300,8 @@ public class ContractDeployment {
 
             Map<String, BigDecimal> requiredAssets = calculateRequiredAssetsForIntents(null, systemFee, networkFee);
 
-            List<RawTransactionInput> inputs = new ArrayList<>();
-            List<RawTransactionOutput> outputs = new ArrayList<>();
+            List<TransactionInput> inputs = new ArrayList<>();
+            List<TransactionOutput> outputs = new ArrayList<>();
 
             if (!requiredAssets.isEmpty()) {
                 if (this.account == null)
@@ -313,7 +313,7 @@ public class ContractDeployment {
                     inputs.addAll(utxos.stream().map(Utxo::toTransactionInput).collect(Collectors.toList()));
                     BigDecimal changeAmount = calculateChange(utxos, reqValue);
                     if (changeAmount != null) outputs.add(
-                            new RawTransactionOutput(reqAssetId, changeAmount.toPlainString(), this.account.getAddress()));
+                            new TransactionOutput(reqAssetId, changeAmount.toPlainString(), this.account.getAddress()));
                 });
             }
 
@@ -328,9 +328,9 @@ public class ContractDeployment {
         }
 
         private Map<String, BigDecimal> calculateRequiredAssetsForIntents(
-                List<RawTransactionOutput> outputs, BigDecimal... fees) {
+                List<TransactionOutput> outputs, BigDecimal... fees) {
 
-            List<RawTransactionOutput> intents = outputs == null ? new ArrayList<>() : new ArrayList<>(outputs);
+            List<TransactionOutput> intents = outputs == null ? new ArrayList<>() : new ArrayList<>(outputs);
             intents.addAll(createOutputsFromFees(fees));
             Map<String, BigDecimal> assets = new HashMap<>();
             intents.forEach(output -> {
@@ -343,11 +343,11 @@ public class ContractDeployment {
             return assets;
         }
 
-        private List<RawTransactionOutput> createOutputsFromFees(BigDecimal... fees) {
-            List<RawTransactionOutput> outputs = new ArrayList<>(fees.length);
+        private List<TransactionOutput> createOutputsFromFees(BigDecimal... fees) {
+            List<TransactionOutput> outputs = new ArrayList<>(fees.length);
             for (BigDecimal fee : fees) {
                 if (fee.compareTo(BigDecimal.ZERO) > 0) {
-                    outputs.add(new RawTransactionOutput(GASAsset.HASH_ID, fee.toPlainString(), null));
+                    outputs.add(new TransactionOutput(GASAsset.HASH_ID, fee.toPlainString(), null));
                 }
             }
             return outputs;
