@@ -464,8 +464,11 @@ public class AssetTransfer {
                         .map(Utxo::toTransactionInput)
                         .collect(Collectors.toList()));
 
-                this.outputs.add(getChangeTransactionOutput(assetId, requiredAmount,
-                        selectedUtxos, changeAcct.getAddress()));
+                RawTransactionOutput changeTransactionOutput = getChangeTransactionOutput(
+                        assetId, requiredAmount, selectedUtxos, changeAcct.getAddress());
+                if (changeTransactionOutput != null) {
+                    this.outputs.add(changeTransactionOutput);
+                }
             });
         }
 
